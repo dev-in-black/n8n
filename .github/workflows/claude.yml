@@ -24,7 +24,7 @@ jobs:
       issues: read
       id-token: write
     env:
-      ENABLE_OAUTH_TOKEN: true
+      ENABLE_OAUTH_TOKEN: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
