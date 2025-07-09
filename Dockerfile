@@ -1,4 +1,4 @@
-FROM n8nio/n8n:latest
+FROM docker.n8n.io/n8nio/n8n:1.100.0
 
 # Switch to root to install packages
 USER root
@@ -8,16 +8,16 @@ USER root
 RUN npm install -g langfuse-langchain
 
 # Create a non-root user for security (if not already exists)
-RUN if ! id -u node > /dev/null 2>&1; then \
-    addgroup --system --gid 1000 node && \
-    adduser --system --uid 1000 --ingroup node node; \
+RUN if ! id -u n8n > /dev/null 2>&1; then \
+    addgroup --system --gid 1000 n8n && \
+    adduser --system --uid 1000 --ingroup n8n n8n; \
     fi
 
 # Set proper permissions
 RUN chmod -R 755 /usr/local/lib/node_modules/langfuse-langchain || true
 
-# Switch back to node user for security
-USER node
+# Switch back to n8n user for security
+USER n8n
 
 # Set working directory
 WORKDIR /data
