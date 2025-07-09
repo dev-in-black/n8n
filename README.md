@@ -55,6 +55,16 @@ volumes:
 - `v*` - Version-specific tags (e.g., v1.0.0)
 - `main` - Latest build from main branch
 
+### Version Management
+
+This project uses semantic versioning with the format `major.minor.patch`. Versions can be bumped using the GitHub Actions workflow:
+
+1. Go to the Actions tab in the GitHub repository
+2. Select "Build and Push Docker Image" workflow
+3. Click "Run workflow" 
+4. Choose the version bump type (patch, minor, or major)
+5. The workflow will automatically increment the version and create a new tag
+
 ## Development
 
 ### Building Locally
@@ -86,7 +96,7 @@ All standard n8n environment variables are supported. Key ones include:
 
 ## Security
 
-- Container runs as non-root user for security
+- Container runs as non-root `node` user for security
 - Regular security scanning with Trivy
 - Based on official n8n image security practices
 - Health checks included for monitoring
