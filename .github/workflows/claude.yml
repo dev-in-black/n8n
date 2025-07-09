@@ -1,0 +1,81 @@
+name: Claude PR Assistant
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  claude-code-action:
+    if: |
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@claude'))
+    runs-on: [ self-hosted, nuc, k8s]
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+    env:
+      ENABLE_OAUTH_TOKEN: true
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Get OAuth Access Token
+        id: get-token
+        if: env.ENABLE_OAUTH_TOKEN == 'true'
+        run: |
+          response=$(curl -s --location 'https://auth.vhc.io.vn/realms/nuc/protocol/openid-connect/token' \
+            --header 'Content-Type: application/x-www-form-urlencoded' \
+            --data-urlencode 'client_id=argocd' \
+            --data-urlencode 'client_secret=${{ secrets.OAUTH_CLIENT_SECRET }}' \
+            --data-urlencode 'grant_type=password' \
+            --data-urlencode 'username=${{ secrets.OAUTH_USERNAME }}' \
+            --data-urlencode 'password=${{ secrets.OAUTH_PASSWORD }}' \
+            --data-urlencode 'scope=openid groups')
+          
+          access_token=$(echo "$response" | jq -r '.access_token')
+          
+          if [ "$access_token" = "null" ] || [ -z "$access_token" ]; then
+            echo "Failed to get access token"
+            echo "Response: $response"
+            exit 1
+          fi
+          
+          echo "::add-mask::$access_token"
+          echo "access_token=$access_token" >> $GITHUB_OUTPUT
+
+      - name: Run Claude PR Action
+        uses: anthropics/claude-code-action@beta
+        env:
+          CLAUDE_CODE_ENABLE_TELEMETRY: "1"
+          OTEL_METRICS_EXPORTER: "otlp"
+          OTEL_LOGS_EXPORTER: "otlp"
+          # OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${{ steps.get-token.outputs.access_token }}"
+          OTEL_EXPORTER_OTLP_PROTOCOL: "http/protobuf"
+          OTEL_EXPORTER_OTLP_ENDPOINT: "http://local-signoz-otel-collector.signoz.svc.cluster.local:4318"
+          # OTEL_EXPORTER_OTLP_METRICS_ENDPOINT: "https://n8n.vhc.io.vn/webhook/v1/metrics"
+          OTEL_METRIC_EXPORT_INTERVAL: "5000"
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.PAT }}
+          timeout_minutes: "60"
+          mcp_config: |
+            {
+              "mcpServers": {
+                "graphiti": {
+                  "type": "sse",
+                  "url": "http://graphiti-mcp-service.kagent:8000/sse"
+                }
+              }
+            }
+          allowed_tools: "graphiti__get_entity_edge, graphiti__get_episodes, graphiti__search_memory_facts, graphiti__search_memory_nodes"
