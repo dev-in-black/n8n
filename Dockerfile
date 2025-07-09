@@ -7,11 +7,7 @@ USER root
 # Using npm install with --global flag to ensure it's available system-wide
 RUN npm install -g langfuse-langchain
 
-# Create a non-root user for security (if not already exists)
-RUN if ! id -u n8n > /dev/null 2>&1; then \
-    addgroup --system --gid 1000 n8n && \
-    adduser --system --uid 1000 --ingroup n8n n8n; \
-    fi
+# User 'n8n' already exists in the base image, no need to create it
 
 # Set proper permissions
 RUN chmod -R 755 /usr/local/lib/node_modules/langfuse-langchain || true
