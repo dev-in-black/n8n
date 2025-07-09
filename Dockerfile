@@ -12,8 +12,8 @@ RUN npm install -g langfuse-langchain
 # Set proper permissions
 RUN chmod -R 755 /usr/local/lib/node_modules/langfuse-langchain || true
 
-# Switch back to n8n user for security
-USER n8n
+# Switch back to node user for security
+USER node
 
 # Set working directory
 WORKDIR /data
