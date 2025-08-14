@@ -1,4 +1,4 @@
-FROM docker.n8n.io/n8nio/n8n:1.100.0
+FROM docker.n8n.io/n8nio/n8n:1.105.4
 
 # # Switch to root to install packages
 USER root
